@@ -7,21 +7,11 @@
 extern "C"
 {
 	__declspec (dllexport) void __cdecl ClickTimes(int times, int delay);
+	__declspec (dllexport) void __cdecl Mode();
 	__declspec (dllexport) void __cdecl initAutoClicker();
 }
 
-void clickMouse(std::string type) {
-	POINT p;
-	if (GetCursorPos(&p)) {
-		if (type == "left") {
-			mouse_event(MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
-
-			mouse_event(MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
-		}
-	}
-}
-
-
+std::atomic<bool> Left = true;
 std::atomic<bool> TempClickToggle = false;
 std::atomic<bool> ToggleClick = false;
 std::atomic<int> TimesToClick = 0;
@@ -29,6 +19,27 @@ std::atomic<int> LastTimesToClick = 0;
 std::atomic<int> Delay = 0;
 std::atomic<bool> InitCalled = false;
 std::atomic<bool> ToggleEverything = false;
+
+void Mode() {
+	Left = !Left;
+}
+
+void clickMouse() {
+	POINT p;
+	if (GetCursorPos(&p)) {
+		if (Left) {
+			mouse_event(MOUSEEVENTF_LEFTDOWN, p.x, p.y, 0, 0);
+
+			mouse_event(MOUSEEVENTF_LEFTUP, p.x, p.y, 0, 0);
+		}
+		else {
+			mouse_event(MOUSEEVENTF_RIGHTDOWN, p.x, p.y, 0, 0);
+
+			mouse_event(MOUSEEVENTF_RIGHTUP, p.x, p.y, 0, 0);
+		}
+	}
+}
+
 
 void ClickHandler() {
 	while (ToggleEverything) {
@@ -45,7 +56,7 @@ void ClickHandler() {
 void ClickTimesThread() {
 	while (ToggleEverything) {
 		if (TempClickToggle && TimesToClick > 0) {
-			clickMouse("left");
+			clickMouse();
 			if (Delay > 0) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(Delay));
 			}
@@ -60,7 +71,7 @@ void ClickTimesThread() {
 void ClickToggleThread() {
 	while (ToggleEverything) {
 		if (ToggleClick) {
-			clickMouse("left");
+			clickMouse();
 			if (Delay > 0) {
 				std::this_thread::sleep_for(std::chrono::milliseconds(Delay));
 			}
